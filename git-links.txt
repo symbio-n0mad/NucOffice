@@ -1,0 +1,11 @@
+git@github.com:symbio-n0mad/NucOffice.git
+
+git@github.com:symbio-n0mad/plotSPE.git
+
+git@github.com:symbio-n0mad/plotRDE.git
+
+git@github.com:symbio-n0mad/NucDB.git
+
+git@github.com:symbio-n0mad/ActivityPartitioner.git
+
+hdtv: https://github.com/hdtv-tool/hdtv

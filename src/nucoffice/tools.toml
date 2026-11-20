@@ -1,0 +1,45 @@
+# NucOffice-Registry: alle verwaltbaren Tools.
+# Felder siehe nucoffice/registry.py und docs/TOOL-SPEC.md.
+# NC-Cyclovoltammetry und NC-UV/VIS folgen, sobald es Repos gibt.
+
+[tools.plotspe]
+display_name = "plotSPE"
+description = "Gammaspektren (.Spe) darstellen und auswerten"
+repo = "symbio-n0mad/plotSPE"
+package = "plotspe"            # vorläufig – plotSPE hat noch keine pyproject.toml
+gui_entry = "plotspe"          # vorläufig, siehe TOOL-SPEC
+requires_system = ["gnuplot"]
+
+[tools.plotrde]
+display_name = "plotRDE"
+description = "Auswertung und Darstellung von RadonEYE-Messdaten"
+repo = "symbio-n0mad/plotRDE"
+package = "radonlab"
+extras = ["gui"]
+gui_entry = "radonlab-gui"
+
+[tools.activitypartitioner]
+display_name = "ActivityPartitioner"
+description = "Radioaktive Aktivität auf Portionen und Zeitpunkte aufteilen"
+repo = "symbio-n0mad/ActivityPartitioner"
+package = "activity-partitioning"
+gui_entry = "actpart-gui"
+
+[tools.nucdb]
+display_name = "NC-database-editor"
+description = "Nukliddatenbank (NucDB) pflegen"
+repo = "symbio-n0mad/NucDB"
+package = "nucdb"
+extras = ["gui"]
+gui_entry = "nucdb-editor"     # vorläufig, Projekt in Planung
+
+[tools.hdtv]
+display_name = "HDTV"
+description = "Analyse von Kernspektren (benötigt ROOT mit PyROOT)"
+repo = "hdtv-tool/hdtv"
+package = "hdtv"
+gui_entry = "hdtv"
+platforms = ["linux"]
+terminal = true                # Konsolenprogramm: in einem Terminal starten
+system_site_packages = true    # PyROOT kommt aus dem System
+requires_system = ["root-config"]
