@@ -26,10 +26,10 @@ Bestandsaufnahme der lokalen Projekte unter `~/Code/` (nur gelesen, 2026-11-20):
 | plotSPE | `symbio-n0mad/plotSPE` (leer) | `~/Code/plotSPE/plotSPEKopie` | **keine `pyproject.toml`**, Start `python plotSPE.py`, `requirements.txt`; braucht **gnuplot** (System), optional TeX | Historie 529 Commits / 15 MB `.git` → Neuanfang |
 | plotRDE | `symbio-n0mad/plotRDE` (leer) | `~/Code/radonEYE` | `radonlab` (hatchling), GUI `radonlab-gui`, Extras `[gui]`/`[all]`, Sphinx-Doku | ok |
 | ActivityPartitioner | `symbio-n0mad/ActivityPartitioner` (leer) | `~/Code/activity-partitioning` | `activity-partitioning` 1.4.0, GUI `actpart-gui` | ok (kein git) |
-| NC-database-editor | `symbio-n0mad/NucDB` (leer) | `~/Code/nc-database-editor` | Paket `nucdb` – erst Planung | Spezifikation `docs/NUCDB-SPEC.md` |
+| NucDB (Datenbank-Editor, früher „NC-database-editor“) | `symbio-n0mad/NucDB` (leer) | `~/Code/nc-database-editor` | Paket `nucdb` – erst Planung | Spezifikation `docs/NUCDB-SPEC.md` |
 | HDTV | `hdtv-tool/hdtv` (fremd, Tags `v24.xx`) | – | `hdtv` (Konsole/IPython + ROOT-Fenster), GPL-2.0 | nur Linux, im Terminal starten |
-| NC-Cyclovoltammetry | _noch kein Repo_ | – | – | – |
-| NC-UV/VIS | _noch kein Repo_ | – | – | – |
+| NC-Cyclovoltammetry | _noch kein Repo_ | – | – | Projekt existiert noch nicht, Repo folgt |
+| NC-UV/VIS | _noch kein Repo_ | – | – | Projekt existiert noch nicht, Repo folgt |
 | **NucOffice** | `symbio-n0mad/NucOffice` (leer) | `~/Code/NucOffice` | `nucoffice` | dieses Projekt |
 
 SSH-Zugriff auf GitHub getestet: funktioniert (Konto `symbio-n0mad`), alle Repos leer.
@@ -175,8 +175,8 @@ denselben Kern.
 
 ## 7. Offene Fragen
 
-1. Repos für NC-Cyclovoltammetry und NC-UV/VIS (noch nicht vorhanden).
-2. Anzeigenamen: „plotRDE“ (Paket heißt `radonlab`) und „NC-database-editor“ (Repo `NucDB`)?
+1. Repos für NC-Cyclovoltammetry und NC-UV/VIS – kommen, sobald die Projekte existieren.
+2. ~~Anzeigenamen~~ geklärt: „plotRDE“ bleibt, der Datenbank-Editor heißt in NucOffice **„NucDB“**.
 3. plotSPE braucht eine `pyproject.toml` mit GUI-Entry-Point (im plotSPE-Projekt umsetzen,
    Vorgabe: `docs/TOOL-SPEC.md`).
 

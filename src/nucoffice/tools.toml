@@ -26,8 +26,8 @@ package = "activity-partitioning"
 gui_entry = "actpart-gui"
 
 [tools.nucdb]
-display_name = "NC-database-editor"
-description = "Nukliddatenbank (NucDB) pflegen"
+display_name = "NucDB"
+description = "Nukliddatenbank ansehen und pflegen (Editor)"
 repo = "symbio-n0mad/NucDB"
 package = "nucdb"
 extras = ["gui"]
