@@ -24,6 +24,7 @@ class Layout:
 
     root: Path  # Basisordner
     bin_dir: Path  # Starter für die Kommandozeile
+    scope: Scope = Scope.USER
 
     @property
     def tools_dir(self) -> Path:
@@ -56,11 +57,11 @@ def layout(scope: Scope = Scope.USER) -> Layout:
             root = Path(platformdirs.user_data_dir("NucOffice", appauthor=False, roaming=False))
         else:
             root = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "NucOffice"
-        return Layout(root=root, bin_dir=root / "bin")
+        return Layout(root=root, bin_dir=root / "bin", scope=scope)
     if scope is Scope.USER:
         root = Path(platformdirs.user_data_dir(APP))
-        return Layout(root=root, bin_dir=Path.home() / ".local" / "bin")
-    return Layout(root=Path("/opt") / APP, bin_dir=Path("/usr/local/bin"))
+        return Layout(root=root, bin_dir=Path.home() / ".local" / "bin", scope=scope)
+    return Layout(root=Path("/opt") / APP, bin_dir=Path("/usr/local/bin"), scope=scope)
 
 
 def runtime_dir() -> Path:

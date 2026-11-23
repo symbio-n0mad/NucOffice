@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 from pathlib import Path
 
-from . import __version__, installer, process
-from .sources import github
+from . import __version__, installer, process, staging
 from .paths import Scope, layout
 from .registry import load_registry
 from .state import State
@@ -44,19 +42,62 @@ def _get_tool(key: str):
     return reg[key]
 
 
+def _fmt_size(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.1f} {unit}"
+        n /= 1024
+
+
+def _cmd_show(args) -> int:
+    """Code laden (nicht ausführen) und Überblick zeigen."""
+    tool, lay = _get_tool(args.tool), layout(args.scope)
+    try:
+        staged = staging.stage(tool, lay, ref=args.ref)
+    except OSError as exc:
+        print(f"Fehler beim Laden von GitHub: {exc}", file=sys.stderr)
+        return 1
+    s = staging.summarize(staged.path)
+    print(f"{tool.display_name} – Stand {staged.ref} (Commit {staged.commit[:10]})")
+    print(f"  Code geladen nach: {staged.path}")
+    print(f"  Auf GitHub ansehen: {staged.browse_url}")
+    inst = State(lay.state_file).get(tool.key)
+    if inst and inst.commit and inst.commit != staged.commit:
+        print(f"  Änderungen seit installierter Version {inst.version}: {staged.compare_url(inst.commit)}")
+    elif inst and inst.commit == staged.commit:
+        print(f"  Dieser Stand ist bereits installiert ({inst.version}).")
+    print(f"  Paket: {s.name or '(aus setup.py)'} {s.version or '(Version dynamisch)'}, "
+          f"Python {s.requires_python or '?'}")
+    print(f"  Dateien: {s.file_count} ({s.python_files} Python), {_fmt_size(s.size_bytes)}")
+    print("  Abhängigkeiten: " + (", ".join(s.dependencies) or "keine"))
+    for extra in tool.extras:
+        print(f"  Zusatz [{extra}]: " + ", ".join(s.optional.get(extra, [])))
+    print("  Startbefehle: " + (", ".join(s.entry_points) or "keine"))
+    if s.build_hooks:
+        print("  Achtung, führt beim Installieren Code aus: " + ", ".join(s.build_hooks))
+    print(f"Installieren dieses Stands: nucoffice install {tool.key}")
+    if args.open:
+        staging.open_folder(staged.path)
+    return 0
+
+
 def _cmd_install(args) -> int:
     tool, lay = _get_tool(args.tool), layout(args.scope)
     try:
         if args.source_path:
             installer.install(tool, Path(args.source_path), lay, source="local", ref="local")
+            return 0
+        staged = staging.load_staged(tool, lay)
+        if staged and args.ref in (None, staged.ref):
+            print(f"Installiere den angesehenen Stand {staged.ref} ({staged.commit[:10]}).")
         else:
-            rel = github.latest(tool.repo)
-            print(f"Lade {tool.display_name} {rel.ref} ({rel.commit[:10]}) von GitHub …")
-            src = github.download_source(tool.repo, rel.commit, lay.staging_dir / tool.key)
-            try:
-                installer.install(tool, src, lay, source="github", ref=rel.ref, commit=rel.commit)
-            finally:
-                shutil.rmtree(src, ignore_errors=True)
+            staged = staging.stage(tool, lay, ref=args.ref)
+            print(f"Lade {tool.display_name} {staged.ref} ({staged.commit[:10]}) von GitHub …")
+        try:
+            installer.install(tool, staged.path, lay, source="github",
+                              ref=staged.ref, commit=staged.commit)
+        finally:
+            staging.discard(tool, lay)
     except (installer.InstallError, OSError) as exc:
         print(f"Fehler: {exc}", file=sys.stderr)
         return 1
@@ -96,7 +137,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("tool")
     sp.add_argument("--from", dest="source_path", metavar="ORDNER",
                     help="aus lokalem Quellordner statt von GitHub installieren")
+    sp.add_argument("--ref", help="bestimmte Version (Tag/Branch/Commit) statt der neuesten")
     sp.set_defaults(func=_cmd_install)
+    sp = sub.add_parser("show", help="Code vor der Installation laden und ansehen")
+    sp.add_argument("tool")
+    sp.add_argument("--ref", help="bestimmte Version (Tag/Branch/Commit) statt der neuesten")
+    sp.add_argument("--open", action="store_true", help="Ordner im Dateimanager öffnen")
+    sp.set_defaults(func=_cmd_show)
     for name, func, text in [("status", _cmd_status, "läuft das Tool?"),
                              ("stop", _cmd_stop, "Tool beenden"),
                              ("start", _cmd_start, "Tool starten"),

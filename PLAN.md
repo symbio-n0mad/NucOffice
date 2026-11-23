@@ -162,10 +162,13 @@ denselben Kern.
 ## 6. Phasen
 
 1. ✅ **Grundgerüst**: Projektstruktur, `pyproject.toml`, Registry, Pfade pro OS/Scope, Statusdatei.
-2. **Quellen & Staging**: GitHub-Download (Zip/Release, Commit-Pinning), mitgelieferte Archive, Code-Ansicht.
+2. 🟡 **Quellen & Staging**: ✅ GitHub-Download (Archiv, Commit-Pinning), ✅ Code-Ansicht
+   (`nucoffice show`: Überblick, Abhängigkeiten, Startbefehle, Warnung bei setup.py/Build-Skripten,
+   GitHub-Link und Vergleichslink zur installierten Version; `install` nimmt danach genau den
+   angesehenen Stand) · offen: mitgelieferte Archive.
 3. 🟡 **Installer**: ✅ venv pro Tool (eigener Ordner je Installation, da venvs nicht
    umbenennbar sind), Installation aus GitHub oder lokalem Ordner, Doku-Kopie, Deinstallation,
-   Aufräumen bei Fehlern · offen: Verknüpfungen (Startmenü/.desktop).
+   Aufräumen bei Fehlern, ✅ Menüeinträge (Linux .desktop, Windows Startmenü – Windows ungetestet).
 4. ✅ **Prozessverwaltung**: start/stop/status, Ausgabe des letzten Starts in einer Log-Datei;
    Konsolen-Tools (HDTV) im Terminal.
 5. **Updates**: Versionsprüfung, Diff-Vorschau, Update mit Rollback.
@@ -177,6 +180,10 @@ denselben Kern.
 9. **Tests & CI**: Unit-Tests, GitHub Actions auf Windows + Linux.
 
 ## 7. Offene Fragen
+
+0. **HDTV-Version:** Das letzte HDTV-Release `v24.10` ist alt (noch `setup.py`), der Zweig
+   `master` ist deutlich neuer (moderne `pyproject.toml`). Soll NucOffice für HDTV `master` statt
+   des letzten Releases nehmen?
 
 1. Repos für NC-Cyclovoltammetry und NC-UV/VIS – kommen, sobald die Projekte existieren.
 2. ~~Anzeigenamen~~ geklärt: „plotRDE“ bleibt, der Datenbank-Editor heißt in NucOffice **„NucDB“**.

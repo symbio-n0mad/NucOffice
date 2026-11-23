@@ -16,7 +16,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import process
+from . import process, shortcuts
 from .paths import Layout
 from .registry import Tool
 from .state import InstalledTool, State
@@ -72,6 +72,7 @@ def install(
     source: str,
     ref: str,
     commit: str | None = None,
+    menu_entry: bool = True,
     log=print,
 ) -> InstalledTool:
     """Installiert (oder aktualisiert) ``tool`` aus dem entpackten Quellordner ``source_dir``."""
@@ -127,6 +128,12 @@ def install(
     for old in tool_dir.glob("venv*"):
         if old.name != env_name:
             shutil.rmtree(old, ignore_errors=True)
+    if menu_entry:
+        try:
+            link = shortcuts.create(tool, _entry_path(new, tool.gui_entry), lay.scope)
+            log(f"Menüeintrag: {link}")
+        except (OSError, subprocess.CalledProcessError) as exc:
+            log(f"Hinweis: Menüeintrag konnte nicht angelegt werden ({exc}).")
     if previous:
         log(f"Vorherige Version {previous.version} ersetzt.")
     log(f"{tool.display_name} {version} installiert.")
@@ -153,7 +160,8 @@ def uninstall(tool: Tool, lay: Layout, log=print) -> bool:
         return False
     _check_writable(lay)
     process.stop(tool.key)
-    shutil.rmtree(tool_dir)
+    shortcuts.remove(tool, lay.scope)
+    shutil.rmtree(tool_dir, ignore_errors=True)
     state.remove(tool.key)
     log(f"{tool.display_name} deinstalliert.")
     return True

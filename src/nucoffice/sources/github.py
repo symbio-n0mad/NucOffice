@@ -9,6 +9,7 @@ import json
 import shutil
 import tarfile
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,6 +51,11 @@ def latest(repo: str) -> Release:
     branch = _get_json(f"{API}/repos/{repo}")["default_branch"]
     commit = _get_json(f"{API}/repos/{repo}/commits/{branch}")["sha"]
     return Release(ref=branch, commit=commit, is_tag=False)
+
+
+def resolve(repo: str, ref: str) -> str:
+    """Tag, Branch oder (Kurz-)Commit in einen vollständigen Commit-Hash auflösen."""
+    return _get_json(f"{API}/repos/{repo}/commits/{urllib.parse.quote(ref, safe='')}")["sha"]
 
 
 def _version_key(tag: str):
