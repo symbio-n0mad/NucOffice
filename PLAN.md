@@ -181,9 +181,10 @@ denselben Kern.
 
 ## 7. Offene Fragen
 
-0. **HDTV-Version:** Das letzte HDTV-Release `v24.10` ist alt (noch `setup.py`), der Zweig
-   `master` ist deutlich neuer (moderne `pyproject.toml`). Soll NucOffice für HDTV `master` statt
-   des letzten Releases nehmen?
+0. ✅ **HDTV-Version – entschieden (2026-11-23):** NucOffice nimmt für HDTV den Zweig **`master`**
+   statt des letzten Releases (`v24.10` ist alt, noch `setup.py`; `master` ist neuer, mit
+   `pyproject.toml`). Umsetzung noch offen: Registry-Feld (z. B. `track = "master"`), das die
+   Regel „neuestes Release“ pro Tool übersteuert; gilt für Installation und Updates.
 
 1. Repos für NC-Cyclovoltammetry und NC-UV/VIS – kommen, sobald die Projekte existieren.
 2. ~~Anzeigenamen~~ geklärt: „plotRDE“ bleibt, der Datenbank-Editor heißt in NucOffice **„NucDB“**.
