@@ -28,6 +28,10 @@ def _run_file(key: str, base: Path | None = None) -> Path:
     return (base or runtime_dir()) / "running" / f"{key}.json"
 
 
+def log_file(key: str, base: Path | None = None) -> Path:
+    return (base or runtime_dir()) / "logs" / f"{key}.log"
+
+
 def _detach_kwargs() -> dict:
     if sys.platform == "win32":
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
@@ -40,14 +44,17 @@ def start(key: str, cmd: list[str], *, cwd: Path | None = None, base: Path | Non
     current = status(key, base=base)
     if current is not None:
         raise RuntimeError(f"{key} läuft bereits (PID {current.pid})")
-    proc = subprocess.Popen(
-        cmd,
-        cwd=cwd,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        **_detach_kwargs(),
-    )
+    log = log_file(key, base)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with open(log, "wb") as out:  # Ausgabe des letzten Starts, für Fehlersuche
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdin=subprocess.DEVNULL,
+            stdout=out,
+            stderr=subprocess.STDOUT,
+            **_detach_kwargs(),
+        )
     info = RunInfo(pid=proc.pid, create_time=psutil.Process(proc.pid).create_time(), cmd=list(cmd))
     path = _run_file(key, base)
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -49,9 +49,6 @@ class Layout:
     def tool_dir(self, key: str) -> Path:
         return self.tools_dir / key
 
-    def venv_dir(self, key: str) -> Path:
-        return self.tool_dir(key) / "venv"
-
 
 def layout(scope: Scope = Scope.USER) -> Layout:
     if sys.platform == "win32":

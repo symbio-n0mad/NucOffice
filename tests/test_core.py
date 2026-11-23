@@ -27,7 +27,7 @@ def test_registry_rejects_unknown_field(tmp_path):
 def test_layout_paths():
     lay = layout(Scope.USER)
     assert lay.nucdb_dir == lay.root / "data" / "nucdb"
-    assert lay.venv_dir("plotspe").parent == lay.tool_dir("plotspe")
+    assert lay.tool_dir("plotspe").parent == lay.tools_dir
 
 
 def test_state_roundtrip(tmp_path):

@@ -17,6 +17,7 @@ class InstalledTool:
     ref: str  # Tag oder Commit
     commit: str | None
     installed_at: str  # ISO-8601
+    env: str = "venv"  # Name des aktiven venv-Ordners im Tool-Ordner
 
 
 class State:

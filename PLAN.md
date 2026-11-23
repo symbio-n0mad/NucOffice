@@ -1,6 +1,6 @@
 # NucOffice – Projektnotizen & Plan
 
-> Stand: 2026-11-20 · Status: **Grundgerüst begonnen (Kern ohne GUI)**
+> Stand: 2026-11-23 · Status: **Kern + Installer (CLI) fertig, GUI folgt**
 
 ## 1. Ziel
 
@@ -161,10 +161,13 @@ denselben Kern.
 
 ## 6. Phasen
 
-1. **Grundgerüst**: Projektstruktur, `pyproject.toml`, Registry, Pfade pro OS/Scope, Statusdatei.
+1. ✅ **Grundgerüst**: Projektstruktur, `pyproject.toml`, Registry, Pfade pro OS/Scope, Statusdatei.
 2. **Quellen & Staging**: GitHub-Download (Zip/Release, Commit-Pinning), mitgelieferte Archive, Code-Ansicht.
-3. **Installer**: venv pro Tool, Installation, Verknüpfungen, Deinstallation, Rollback.
-4. **Prozessverwaltung**: start/stop/status.
+3. 🟡 **Installer**: ✅ venv pro Tool (eigener Ordner je Installation, da venvs nicht
+   umbenennbar sind), Installation aus GitHub oder lokalem Ordner, Doku-Kopie, Deinstallation,
+   Aufräumen bei Fehlern · offen: Verknüpfungen (Startmenü/.desktop).
+4. ✅ **Prozessverwaltung**: start/stop/status, Ausgabe des letzten Starts in einer Log-Datei;
+   Konsolen-Tools (HDTV) im Terminal.
 5. **Updates**: Versionsprüfung, Diff-Vorschau, Update mit Rollback.
 6. **Systemweite Installation**: Rechteerhöhung Linux/Windows.
 7. **GUI (PySide6)**: Kachel-/Listenansicht aller Tools mit Status (installiert, Version,
