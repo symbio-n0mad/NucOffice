@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .paths import Layout
 from .registry import Tool
-from .sources import github
+from .sources import bundled, github
 
 MARKER = ".nucoffice-staged.json"
 
@@ -27,31 +27,47 @@ class Staged:
     key: str
     repo: str
     ref: str
-    commit: str
+    commit: str | None
     path: Path
+    source: str = "github"  # "github" | "bundled"
 
     @property
-    def browse_url(self) -> str:
-        """Ansicht genau dieses Stands auf GitHub."""
-        return f"https://github.com/{self.repo}/tree/{self.commit}"
+    def browse_url(self) -> str | None:
+        """Ansicht genau dieses Stands auf GitHub (nur wenn der Commit bekannt ist)."""
+        return f"https://github.com/{self.repo}/tree/{self.commit}" if self.commit else None
 
-    def compare_url(self, old_commit: str) -> str:
+    def compare_url(self, old_commit: str) -> str | None:
         """Änderungen gegenüber einer installierten Version auf GitHub."""
+        if not self.commit:
+            return None
         return f"https://github.com/{self.repo}/compare/{old_commit}...{self.commit}"
 
 
 def stage(tool: Tool, lay: Layout, *, ref: str | None = None) -> Staged:
     """Lädt die neueste Version (oder ``ref``) in den Staging-Ordner."""
     if ref is None:
-        rel = github.latest(tool.repo)
+        rel = github.latest(tool.repo, tool.track)
         ref, commit = rel.ref, rel.commit
     else:
         commit = github.resolve(tool.repo, ref)
     dest = lay.staging_dir / tool.key
     github.download_source(tool.repo, commit, dest)
-    staged = Staged(key=tool.key, repo=tool.repo, ref=ref, commit=commit, path=dest)
+    return _mark(Staged(key=tool.key, repo=tool.repo, ref=ref, commit=commit, path=dest))
+
+
+def stage_bundled(tool: Tool, lay: Layout) -> Staged:
+    """Entpackt die mitgelieferte Version in den Staging-Ordner (Prüfsumme wird geprüft)."""
+    entry = bundled.available(tool.key)
+    if entry is None:
+        raise bundled.BundleError(f"Für {tool.display_name} ist keine mitgelieferte Version vorhanden.")
+    dest = bundled.extract(entry, lay.staging_dir / tool.key)
+    return _mark(Staged(key=tool.key, repo=tool.repo, ref=entry.ref, commit=entry.commit,
+                        path=dest, source="bundled"))
+
+
+def _mark(staged: Staged) -> Staged:
     data = {k: v for k, v in asdict(staged).items() if k != "path"}
-    (dest / MARKER).write_text(json.dumps(data, indent=2), encoding="utf-8")
+    (staged.path / MARKER).write_text(json.dumps(data, indent=2), encoding="utf-8")
     return staged
 
 

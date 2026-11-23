@@ -36,8 +36,13 @@ def _get_json(url: str, timeout: float = 15.0):
         return json.load(resp)
 
 
-def latest(repo: str) -> Release:
-    """Neueste Version: letztes GitHub-Release, sonst letzter Tag, sonst Standard-Branch."""
+def latest(repo: str, track: str | None = None) -> Release:
+    """Neueste Version: letztes GitHub-Release, sonst letzter Tag, sonst Standard-Branch.
+
+    Mit ``track`` wird stattdessen immer der aktuelle Stand dieses Branches genommen.
+    """
+    if track:
+        return Release(ref=track, commit=resolve(repo, track), is_tag=False)
     try:
         tag = _get_json(f"{API}/repos/{repo}/releases/latest")["tag_name"]
     except urllib.error.HTTPError as exc:

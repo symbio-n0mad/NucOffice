@@ -37,6 +37,7 @@ gui_entry = "nucdb-editor"     # vorläufig, Projekt in Planung
 display_name = "HDTV"
 description = "Analyse von Kernspektren (benötigt ROOT mit PyROOT)"
 repo = "hdtv-tool/hdtv"
+track = "master"               # letztes Release (v24.10) ist veraltet, master ist aktuell
 package = "hdtv"
 gui_entry = "hdtv"
 platforms = ["linux"]

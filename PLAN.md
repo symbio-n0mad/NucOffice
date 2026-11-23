@@ -1,6 +1,6 @@
 # NucOffice – Projektnotizen & Plan
 
-> Stand: 2026-11-23 · Status: **Kern + Installer (CLI) fertig, GUI folgt**
+> Stand: 2026-11-24 · Status: **Kern, Installer, Code-Ansicht, Offline-Versionen (CLI) fertig, GUI folgt**
 
 ## 1. Ziel
 
@@ -165,7 +165,10 @@ denselben Kern.
 2. 🟡 **Quellen & Staging**: ✅ GitHub-Download (Archiv, Commit-Pinning), ✅ Code-Ansicht
    (`nucoffice show`: Überblick, Abhängigkeiten, Startbefehle, Warnung bei setup.py/Build-Skripten,
    GitHub-Link und Vergleichslink zur installierten Version; `install` nimmt danach genau den
-   angesehenen Stand) · offen: mitgelieferte Archive.
+   angesehenen Stand), ✅ mitgelieferte Archive (`bundled/` + `manifest.json` mit SHA-256;
+   `nucoffice bundle TOOL ORDNER` packt bei Git-Repos nur den eingecheckten Stand;
+   `install --source auto|github|bundled`, bei auto Rückfall auf die mitgelieferte Version,
+   wenn GitHub nicht geht), ✅ Registry-Feld `track` (HDTV folgt `master`).
 3. 🟡 **Installer**: ✅ venv pro Tool (eigener Ordner je Installation, da venvs nicht
    umbenennbar sind), Installation aus GitHub oder lokalem Ordner, Doku-Kopie, Deinstallation,
    Aufräumen bei Fehlern, ✅ Menüeinträge (Linux .desktop, Windows Startmenü – Windows ungetestet).
@@ -181,10 +184,15 @@ denselben Kern.
 
 ## 7. Offene Fragen
 
+0a. **Hinweis für ActivityPartitioner:** `packaging/appimagetool-x86_64.AppImage` (15 MB) liegt
+    im Projektordner und würde ohne Git-Repo/`.gitignore` mitgepackt bzw. ins Repo kommen →
+    im ActivityPartitioner-Projekt ausschließen.
+
 0. ✅ **HDTV-Version – entschieden (2026-11-23):** NucOffice nimmt für HDTV den Zweig **`master`**
    statt des letzten Releases (`v24.10` ist alt, noch `setup.py`; `master` ist neuer, mit
    `pyproject.toml`). Umsetzung noch offen: Registry-Feld (z. B. `track = "master"`), das die
    Regel „neuestes Release“ pro Tool übersteuert; gilt für Installation und Updates.
+   → umgesetzt 2026-11-24 (`track = "master"` in `tools.toml`).
 
 1. Repos für NC-Cyclovoltammetry und NC-UV/VIS – kommen, sobald die Projekte existieren.
 2. ~~Anzeigenamen~~ geklärt: „plotRDE“ bleibt, der Datenbank-Editor heißt in NucOffice **„NucDB“**.

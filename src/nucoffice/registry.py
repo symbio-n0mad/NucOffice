@@ -25,6 +25,7 @@ class Tool:
     requires_system: tuple[str, ...] = ()
     terminal: bool = False
     system_site_packages: bool = False
+    track: str | None = None  # fester Branch statt „neuestes Release“ (z. B. HDTV: "master")
 
     @property
     def repo_url(self) -> str:

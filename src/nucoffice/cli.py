@@ -9,6 +9,7 @@ from pathlib import Path
 from . import __version__, installer, process, staging
 from .paths import Scope, layout
 from .registry import load_registry
+from .sources import bundled
 from .state import State
 
 
@@ -20,6 +21,8 @@ def _cmd_list(args) -> int:
         version = inst.version if inst else "–"
         running = "läuft" if process.status(key) else ""
         note = "" if tool.supported else "(auf diesem System nicht verfügbar)"
+        if tool.supported and bundled.available(key):
+            note = "mitgeliefert: " + (bundled.available(key).version or bundled.available(key).ref)
         print(f"{key:22} {tool.display_name:22} {version:12} {running:6} {note}")
     return 0
 
@@ -49,22 +52,52 @@ def _fmt_size(n: int) -> str:
         n /= 1024
 
 
+def _short(commit: str | None) -> str:
+    return f"Commit {commit[:10]}" if commit else "Commit unbekannt"
+
+
+def _obtain(tool, lay, source: str, ref: str | None, *, reuse_staged: bool):
+    """Quellcode bereitstellen: angesehener Stand, GitHub oder mitgelieferte Version.
+
+    ``source="auto"``: GitHub; ist GitHub nicht erreichbar, die mitgelieferte Version.
+    """
+    if reuse_staged:
+        staged = staging.load_staged(tool, lay)
+        if (staged and source in ("auto", staged.source) and ref in (None, staged.ref)):
+            print(f"Verwende den angesehenen Stand {staged.ref} ({_short(staged.commit)}).")
+            return staged
+    if source == "bundled":
+        if ref:
+            raise bundled.BundleError("--ref geht nur mit Quelle GitHub.")
+        return staging.stage_bundled(tool, lay)
+    try:
+        print(f"Lade {tool.display_name} von GitHub …")
+        return staging.stage(tool, lay, ref=ref)
+    except OSError as exc:
+        if source == "auto" and ref is None and bundled.available(tool.key):
+            print(f"Laden von GitHub fehlgeschlagen ({exc}) – verwende die mitgelieferte Version.")
+            return staging.stage_bundled(tool, lay)
+        raise
+
+
 def _cmd_show(args) -> int:
     """Code laden (nicht ausführen) und Überblick zeigen."""
     tool, lay = _get_tool(args.tool), layout(args.scope)
     try:
-        staged = staging.stage(tool, lay, ref=args.ref)
-    except OSError as exc:
-        print(f"Fehler beim Laden von GitHub: {exc}", file=sys.stderr)
+        staged = _obtain(tool, lay, args.source, args.ref, reuse_staged=False)
+    except (OSError, bundled.BundleError) as exc:
+        print(f"Fehler beim Laden: {exc}", file=sys.stderr)
         return 1
     s = staging.summarize(staged.path)
-    print(f"{tool.display_name} – Stand {staged.ref} (Commit {staged.commit[:10]})")
+    origin = "mitgeliefert" if staged.source == "bundled" else "GitHub"
+    print(f"{tool.display_name} – Stand {staged.ref} ({_short(staged.commit)}, Quelle: {origin})")
     print(f"  Code geladen nach: {staged.path}")
-    print(f"  Auf GitHub ansehen: {staged.browse_url}")
+    if staged.browse_url:
+        print(f"  Auf GitHub ansehen: {staged.browse_url}")
     inst = State(lay.state_file).get(tool.key)
-    if inst and inst.commit and inst.commit != staged.commit:
+    if inst and inst.commit and staged.commit and inst.commit != staged.commit:
         print(f"  Änderungen seit installierter Version {inst.version}: {staged.compare_url(inst.commit)}")
-    elif inst and inst.commit == staged.commit:
+    elif inst and staged.commit and inst.commit == staged.commit:
         print(f"  Dieser Stand ist bereits installiert ({inst.version}).")
     print(f"  Paket: {s.name or '(aus setup.py)'} {s.version or '(Version dynamisch)'}, "
           f"Python {s.requires_python or '?'}")
@@ -87,20 +120,30 @@ def _cmd_install(args) -> int:
         if args.source_path:
             installer.install(tool, Path(args.source_path), lay, source="local", ref="local")
             return 0
-        staged = staging.load_staged(tool, lay)
-        if staged and args.ref in (None, staged.ref):
-            print(f"Installiere den angesehenen Stand {staged.ref} ({staged.commit[:10]}).")
-        else:
-            staged = staging.stage(tool, lay, ref=args.ref)
-            print(f"Lade {tool.display_name} {staged.ref} ({staged.commit[:10]}) von GitHub …")
+        staged = _obtain(tool, lay, args.source, args.ref, reuse_staged=True)
         try:
-            installer.install(tool, staged.path, lay, source="github",
+            installer.install(tool, staged.path, lay, source=staged.source,
                               ref=staged.ref, commit=staged.commit)
         finally:
             staging.discard(tool, lay)
-    except (installer.InstallError, OSError) as exc:
+    except (installer.InstallError, bundled.BundleError, OSError) as exc:
         print(f"Fehler: {exc}", file=sys.stderr)
         return 1
+    return 0
+
+
+def _cmd_bundle(args) -> int:
+    """Mitgelieferte Version aus einem lokalen Projekt packen (für das Release-Zip)."""
+    tool = _get_tool(args.tool)
+    try:
+        entry = bundled.create(tool.key, Path(args.source_dir), version=args.version, ref=args.ref)
+    except (OSError, bundled.BundleError) as exc:
+        print(f"Fehler: {exc}", file=sys.stderr)
+        return 1
+    print(f"{tool.display_name} {entry.version or entry.ref} gepackt: "
+          f"{bundled.bundled_dir() / entry.file} ({_short(entry.commit)})")
+    if entry.commit is None:
+        print("  Hinweis: kein Git-Repo – Ordner wurde ohne venv/build/Cache-Ordner gepackt.")
     return 0
 
 
@@ -138,12 +181,22 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--from", dest="source_path", metavar="ORDNER",
                     help="aus lokalem Quellordner statt von GitHub installieren")
     sp.add_argument("--ref", help="bestimmte Version (Tag/Branch/Commit) statt der neuesten")
+    sp.add_argument("--source", choices=["auto", "github", "bundled"], default="auto",
+                    help="Quelle: GitHub, mitgelieferte Version oder auto (GitHub, offline mitgeliefert)")
     sp.set_defaults(func=_cmd_install)
     sp = sub.add_parser("show", help="Code vor der Installation laden und ansehen")
     sp.add_argument("tool")
     sp.add_argument("--ref", help="bestimmte Version (Tag/Branch/Commit) statt der neuesten")
     sp.add_argument("--open", action="store_true", help="Ordner im Dateimanager öffnen")
+    sp.add_argument("--source", choices=["auto", "github", "bundled"], default="auto",
+                    help="Quelle: GitHub, mitgelieferte Version oder auto (GitHub, offline mitgeliefert)")
     sp.set_defaults(func=_cmd_show)
+    sp = sub.add_parser("bundle", help="(Entwicklung) mitgelieferte Version aus lokalem Projekt packen")
+    sp.add_argument("tool")
+    sp.add_argument("source_dir", metavar="ORDNER")
+    sp.add_argument("--version", help="Version, falls nicht in pyproject.toml")
+    sp.add_argument("--ref", help="Bezeichnung des Stands (Standard: v<Version>)")
+    sp.set_defaults(func=_cmd_bundle)
     for name, func, text in [("status", _cmd_status, "läuft das Tool?"),
                              ("stop", _cmd_stop, "Tool beenden"),
                              ("start", _cmd_start, "Tool starten"),
