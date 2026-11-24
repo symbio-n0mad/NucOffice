@@ -1,4 +1,4 @@
-"""Kommandozeile von NucOffice (die PySide6-Oberfläche folgt und nutzt denselben Kern)."""
+"""Kommandozeile von NucOffice (die Oberfläche in nucoffice.gui nutzt denselben Kern)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, installer, process, staging
+from . import __version__, actions, installer, process, staging
 from .paths import Scope, layout
 from .registry import load_registry
 from .sources import bundled
@@ -52,45 +52,17 @@ def _fmt_size(n: int) -> str:
         n /= 1024
 
 
-def _short(commit: str | None) -> str:
-    return f"Commit {commit[:10]}" if commit else "Commit unbekannt"
-
-
-def _obtain(tool, lay, source: str, ref: str | None, *, reuse_staged: bool):
-    """Quellcode bereitstellen: angesehener Stand, GitHub oder mitgelieferte Version.
-
-    ``source="auto"``: GitHub; ist GitHub nicht erreichbar, die mitgelieferte Version.
-    """
-    if reuse_staged:
-        staged = staging.load_staged(tool, lay)
-        if (staged and source in ("auto", staged.source) and ref in (None, staged.ref)):
-            print(f"Verwende den angesehenen Stand {staged.ref} ({_short(staged.commit)}).")
-            return staged
-    if source == "bundled":
-        if ref:
-            raise bundled.BundleError("--ref geht nur mit Quelle GitHub.")
-        return staging.stage_bundled(tool, lay)
-    try:
-        print(f"Lade {tool.display_name} von GitHub …")
-        return staging.stage(tool, lay, ref=ref)
-    except OSError as exc:
-        if source == "auto" and ref is None and bundled.available(tool.key):
-            print(f"Laden von GitHub fehlgeschlagen ({exc}) – verwende die mitgelieferte Version.")
-            return staging.stage_bundled(tool, lay)
-        raise
-
-
 def _cmd_show(args) -> int:
     """Code laden (nicht ausführen) und Überblick zeigen."""
     tool, lay = _get_tool(args.tool), layout(args.scope)
     try:
-        staged = _obtain(tool, lay, args.source, args.ref, reuse_staged=False)
+        staged = actions.obtain(tool, lay, args.source, args.ref, reuse_staged=False)
     except (OSError, bundled.BundleError) as exc:
         print(f"Fehler beim Laden: {exc}", file=sys.stderr)
         return 1
     s = staging.summarize(staged.path)
     origin = "mitgeliefert" if staged.source == "bundled" else "GitHub"
-    print(f"{tool.display_name} – Stand {staged.ref} ({_short(staged.commit)}, Quelle: {origin})")
+    print(f"{tool.display_name} – Stand {staged.ref} ({actions.short(staged.commit)}, Quelle: {origin})")
     print(f"  Code geladen nach: {staged.path}")
     if staged.browse_url:
         print(f"  Auf GitHub ansehen: {staged.browse_url}")
@@ -120,7 +92,7 @@ def _cmd_install(args) -> int:
         if args.source_path:
             installer.install(tool, Path(args.source_path), lay, source="local", ref="local")
             return 0
-        staged = _obtain(tool, lay, args.source, args.ref, reuse_staged=True)
+        staged = actions.obtain(tool, lay, args.source, args.ref, reuse_staged=True)
         try:
             installer.install(tool, staged.path, lay, source=staged.source,
                               ref=staged.ref, commit=staged.commit)
@@ -141,7 +113,7 @@ def _cmd_bundle(args) -> int:
         print(f"Fehler: {exc}", file=sys.stderr)
         return 1
     print(f"{tool.display_name} {entry.version or entry.ref} gepackt: "
-          f"{bundled.bundled_dir() / entry.file} ({_short(entry.commit)})")
+          f"{bundled.bundled_dir() / entry.file} ({actions.short(entry.commit)})")
     if entry.commit is None:
         print("  Hinweis: kein Git-Repo – Ordner wurde ohne venv/build/Cache-Ordner gepackt.")
     return 0
@@ -169,6 +141,11 @@ def _cmd_start(args) -> int:
     return 0
 
 
+def _cmd_gui(args) -> int:
+    from .gui.app import main as gui_main
+    return gui_main()
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="nucoffice", description="NC-Tools verwalten")
     p.add_argument("--version", action="version", version=f"NucOffice {__version__}")
@@ -176,6 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
                    default=Scope.USER, help="systemweite Installation verwenden")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("list", help="alle Tools mit Status").set_defaults(func=_cmd_list)
+    sub.add_parser("gui", help="grafische Oberfläche öffnen").set_defaults(func=_cmd_gui)
     sp = sub.add_parser("install", help="Tool installieren oder aktualisieren (neueste Version)")
     sp.add_argument("tool")
     sp.add_argument("--from", dest="source_path", metavar="ORDNER",

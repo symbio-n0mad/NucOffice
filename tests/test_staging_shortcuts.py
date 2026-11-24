@@ -31,7 +31,7 @@ def test_load_staged_checks_repo(tmp_path):
     lay = Layout(root=tmp_path, bin_dir=tmp_path / "bin")
     d = lay.staging_dir / "demo"
     d.mkdir(parents=True)
-    (d / staging.MARKER).write_text(json.dumps(
+    (lay.staging_dir / f"demo{staging.MARKER_SUFFIX}").write_text(json.dumps(
         {"key": "demo", "repo": "me/demo", "ref": "v1", "commit": "abc123"}))
     staged = staging.load_staged(TOOL, lay)
     assert staged.commit == "abc123" and staged.path == d

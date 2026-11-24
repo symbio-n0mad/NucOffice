@@ -19,7 +19,11 @@ from .paths import Layout
 from .registry import Tool
 from .sources import bundled, github
 
-MARKER = ".nucoffice-staged.json"
+MARKER_SUFFIX = ".staged.json"  # liegt NEBEN dem Code-Ordner, nicht darin
+
+
+def _marker(lay: Layout, key: str) -> Path:
+    return lay.staging_dir / f"{key}{MARKER_SUFFIX}"
 
 
 @dataclass(frozen=True)
@@ -45,6 +49,7 @@ class Staged:
 
 def stage(tool: Tool, lay: Layout, *, ref: str | None = None) -> Staged:
     """Lädt die neueste Version (oder ``ref``) in den Staging-Ordner."""
+    _marker(lay, tool.key).unlink(missing_ok=True)  # alter Stand gilt nicht mehr
     if ref is None:
         rel = github.latest(tool.repo, tool.track)
         ref, commit = rel.ref, rel.commit
@@ -57,6 +62,7 @@ def stage(tool: Tool, lay: Layout, *, ref: str | None = None) -> Staged:
 
 def stage_bundled(tool: Tool, lay: Layout) -> Staged:
     """Entpackt die mitgelieferte Version in den Staging-Ordner (Prüfsumme wird geprüft)."""
+    _marker(lay, tool.key).unlink(missing_ok=True)
     entry = bundled.available(tool.key)
     if entry is None:
         raise bundled.BundleError(f"Für {tool.display_name} ist keine mitgelieferte Version vorhanden.")
@@ -67,14 +73,15 @@ def stage_bundled(tool: Tool, lay: Layout) -> Staged:
 
 def _mark(staged: Staged) -> Staged:
     data = {k: v for k, v in asdict(staged).items() if k != "path"}
-    (staged.path / MARKER).write_text(json.dumps(data, indent=2), encoding="utf-8")
+    (staged.path.parent / f"{staged.key}{MARKER_SUFFIX}").write_text(
+        json.dumps(data, indent=2), encoding="utf-8")
     return staged
 
 
 def load_staged(tool: Tool, lay: Layout) -> Staged | None:
     path = lay.staging_dir / tool.key
-    marker = path / MARKER
-    if not marker.exists():
+    marker = _marker(lay, tool.key)
+    if not marker.exists() or not path.is_dir():
         return None
     data = json.loads(marker.read_text(encoding="utf-8"))
     if data.get("repo") != tool.repo:
@@ -84,6 +91,7 @@ def load_staged(tool: Tool, lay: Layout) -> Staged | None:
 
 def discard(tool: Tool, lay: Layout) -> None:
     shutil.rmtree(lay.staging_dir / tool.key, ignore_errors=True)
+    _marker(lay, tool.key).unlink(missing_ok=True)
 
 
 @dataclass(frozen=True)
@@ -106,7 +114,7 @@ def summarize(path: Path) -> Summary:
     pyproject = path / "pyproject.toml"
     if pyproject.exists():
         project = tomllib.loads(pyproject.read_text(encoding="utf-8")).get("project", {})
-    files = [p for p in path.rglob("*") if p.is_file() and p.name != MARKER]
+    files = [p for p in path.rglob("*") if p.is_file()]
     hooks = [n for n in ("setup.py", "hatch_build.py", "build.py") if (path / n).exists()]
     entries = {**project.get("scripts", {}), **project.get("gui-scripts", {})}
     return Summary(

@@ -30,9 +30,40 @@ class Release:
     is_tag: bool
 
 
-def _get_json(url: str, timeout: float = 15.0):
+class GitHubError(OSError):
+    """Verständliche Fehlermeldung statt roher HTTP-/Netzwerkfehler."""
+
+    def __init__(self, message: str, code: int | None = None):
+        super().__init__(message)
+        self.code = code
+
+
+def _explain(exc: Exception, url: str) -> GitHubError:
+    if isinstance(exc, urllib.error.HTTPError):
+        code = exc.code
+        if code == 404:
+            msg = "Auf GitHub nicht gefunden (Repository oder Version existiert nicht)."
+        elif code == 409:
+            msg = "Das GitHub-Repository ist noch leer."
+        elif code in (403, 429):
+            msg = ("GitHub-Abfragelimit erreicht (ohne Anmeldung ca. 60 Abfragen pro Stunde) – "
+                   "bitte später erneut versuchen.")
+        else:
+            msg = f"GitHub hat mit Fehler {code} geantwortet."
+        return GitHubError(msg, code)
+    return GitHubError(f"GitHub ist nicht erreichbar ({getattr(exc, 'reason', exc)}).")
+
+
+def _open(url: str, timeout: float):
     req = urllib.request.Request(url, headers=_HEADERS)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    try:
+        return urllib.request.urlopen(req, timeout=timeout)
+    except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+        raise _explain(exc, url) from exc
+
+
+def _get_json(url: str, timeout: float = 15.0):
+    with _open(url, timeout) as resp:
         return json.load(resp)
 
 
@@ -45,7 +76,7 @@ def latest(repo: str, track: str | None = None) -> Release:
         return Release(ref=track, commit=resolve(repo, track), is_tag=False)
     try:
         tag = _get_json(f"{API}/repos/{repo}/releases/latest")["tag_name"]
-    except urllib.error.HTTPError as exc:
+    except GitHubError as exc:
         if exc.code != 404:
             raise
         tags = _get_json(f"{API}/repos/{repo}/tags?per_page=100")
@@ -81,8 +112,7 @@ def download_source(repo: str, commit: str, dest: Path, timeout: float = 60.0) -
         shutil.rmtree(dest)
     dest.mkdir(parents=True)
     archive = dest.with_suffix(".tar.gz")
-    req = urllib.request.Request(f"{API}/repos/{repo}/tarball/{commit}", headers=_HEADERS)
-    with urllib.request.urlopen(req, timeout=timeout) as resp, open(archive, "wb") as fh:
+    with _open(f"{API}/repos/{repo}/tarball/{commit}", timeout) as resp, open(archive, "wb") as fh:
         shutil.copyfileobj(resp, fh)
     try:
         with tarfile.open(archive) as tar:

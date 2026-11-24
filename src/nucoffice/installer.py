@@ -49,15 +49,25 @@ def _run(cmd: list[str], log) -> None:
         raise InstallError(f"Befehl fehlgeschlagen (Code {proc.returncode}): {cmd[0]}")
 
 
+# Anzeigenamen für Programme, die NucOffice nur prüft, aber nicht installiert.
+SYSTEM_NAMES = {"root-config": "ROOT (mit PyROOT)", "gnuplot": "gnuplot"}
+
+
 def missing_system_requirements(tool: Tool) -> list[str]:
-    return [req for req in tool.requires_system if shutil.which(req) is None]
+    """Fehlende Systemprogramme, als lesbare Namen."""
+    return [SYSTEM_NAMES.get(req, req) for req in tool.requires_system if shutil.which(req) is None]
 
 
-def _check_writable(lay: Layout) -> None:
+def can_write(lay: Layout) -> bool:
+    """Darf der aktuelle Benutzer in diesem Scope installieren?"""
     probe = lay.root
     while not probe.exists():
         probe = probe.parent
-    if not os.access(probe, os.W_OK):
+    return os.access(probe, os.W_OK)
+
+
+def _check_writable(lay: Layout) -> None:
+    if not can_write(lay):
         raise InstallError(
             f"Keine Schreibrechte für {lay.root}. Für die systemweite Installation werden "
             "Admin-Rechte benötigt."

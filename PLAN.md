@@ -1,6 +1,6 @@
 # NucOffice – Projektnotizen & Plan
 
-> Stand: 2026-11-24 · Status: **Kern, Installer, Code-Ansicht, Offline-Versionen (CLI) fertig, GUI folgt**
+> Stand: 2026-11-24 · Status: **Kern, Installer, Code-Ansicht, Offline-Versionen und PySide6-Oberfläche fertig**
 
 ## 1. Ziel
 
@@ -176,9 +176,12 @@ denselben Kern.
    Konsolen-Tools (HDTV) im Terminal.
 5. **Updates**: Versionsprüfung, Diff-Vorschau, Update mit Rollback.
 6. **Systemweite Installation**: Rechteerhöhung Linux/Windows.
-7. **GUI (PySide6)**: Kachel-/Listenansicht aller Tools mit Status (installiert, Version,
-   läuft, Update verfügbar) und Aktionen (Installieren, Code ansehen, Update, Starten, Stoppen,
-   Deinstallieren); Mehrfachauswahl; Fortschritt/Log; Hell/Dunkel-Modus.
+7. ✅ **GUI (PySide6)**: Karte pro Tool mit Status (installiert/Version/läuft/Update/offline
+   verfügbar/fehlende Systemprogramme) und Aktionen (Installieren, Aktualisieren, Code ansehen mit
+   Dateibaum und Vorschau, Dokumentation inkl. Bilder – lokal, mitgeliefert oder von GitHub,
+   Starten/Beenden, Deinstallieren, Ordner/Log/GitHub öffnen); Mehrfachauswahl; Update-Suche;
+   Protokoll; Hell/Dunkel/System; „Nur für mich“/„Für alle Benutzer“ (Hinweis, wenn Admin-Rechte
+   fehlen – automatische Rechteanforderung folgt mit Phase 6). Start: `nucoffice-gui`.
 8. **Verteilung von NucOffice selbst**: Zip (über GitHub Releases) + Selbst-Update.
 9. **Tests & CI**: Unit-Tests, GitHub Actions auf Windows + Linux.
 
